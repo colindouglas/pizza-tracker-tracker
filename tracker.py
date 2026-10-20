@@ -140,12 +140,17 @@ def main() -> None:
         except Exception as e:
             print(f"Error: {e}")
             if pushover:
-                send_notification(
-                    pushover["user_key"],
-                    pushover["app_token"],
-                    title="Dominos tracker error",
-                    message=str(e),
-                )
+                # A network outage fails this send too, and letting it escape
+                # crashed the loop.
+                try:
+                    send_notification(
+                        pushover["user_key"],
+                        pushover["app_token"],
+                        title="Dominos tracker error",
+                        message=str(e),
+                    )
+                except requests.RequestException as notify_error:
+                    print(f"Error notification failed: {notify_error}")
             backoff = min(MAX_BACKOFF, backoff * 2 if backoff else 30)
             sleep_secs = backoff
             print(f"Backing off for {sleep_secs}s...")
